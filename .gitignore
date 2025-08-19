@@ -1,0 +1,73 @@
+# ───────────────────────────────────────────────
+# ANDROID STUDIO / INTELLIJ IDEA
+# ───────────────────────────────────────────────
+*.iml
+.idea/
+.idea/caches
+.idea/libraries
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/codeStyles/   # Custom code styles (optional)
+
+# ───────────────────────────────────────────────
+# GRADLE
+# ───────────────────────────────────────────────
+.gradle/
+local.properties
+/local.properties
+/build/
+**/build/
+**/output.json
+
+# ───────────────────────────────────────────────
+# COMPOSE / KOTLIN / TEMPORARY FILES
+# ───────────────────────────────────────────────
+*.class
+*.kt.bak
+*.kts.bak
+*.log
+*.tmp
+*.swp
+*.swo
+*.hprof
+
+# Compose Previews
+**/composePreview/
+**/*.preview.png
+
+# Kotlin Symbol Processing (KSP)
+.ksp/
+
+# ───────────────────────────────────────────────
+# TEST OUTPUT
+# ───────────────────────────────────────────────
+/test-results/
+/androidTest-results/
+/coverage/
+/*.ec
+
+# ───────────────────────────────────────────────
+# BUILD ARTIFACTS
+# ───────────────────────────────────────────────
+*.apk
+*.ap_  # Android package resource files
+*.aar  # Android archive (library)
+
+# ───────────────────────────────────────────────
+# LIBRARIES (OPTIONAL - NO version control)
+# ───────────────────────────────────────────────
+/app/libs/
+
+# ───────────────────────────────────────────────
+# WEB / JAVASCRIPT (for WebView or hybrid apps)
+# ───────────────────────────────────────────────
+node_modules/
+npm-debug.log
+
+# ───────────────────────────────────────────────
+# SYSTEM FILES
+# ───────────────────────────────────────────────
+.DS_Store
+Thumbs.db
