@@ -1,8 +1,11 @@
-package com.bryanguerra.dynamicislandmusic.domain.media.overlay
+package com.bryanguerra.dynamicislandmusic.domain.overlay
 
-import com.bryanguerra.dynamicislandmusic.overlay.OverlayWindowManager
 import javax.inject.Inject
 
 class ShowIslandUseCase @Inject constructor(
-    private val overlay: OverlayWindowManager
-) { operator fun invoke() { if (!overlay.isShowing()) overlay.showIsland() } }
+    private val overlay: OverlayRepository
+) {
+    operator fun invoke() {
+        overlay.showPill()
+    }
+}

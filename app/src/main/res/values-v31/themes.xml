@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.IslandTranslucentBlur" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Ventana translúcida -->
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowBlurBehindEnabled">true</item> <!-- Solo efectiva en S+ -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:windowTranslucentNavigation">true</item>
+
+        <!-- Evita re-dimensionar raro al teclado -->
+        <item name="android:windowSoftInputMode">adjustResize</item>
+    </style>
+</resources>

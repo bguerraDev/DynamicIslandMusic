@@ -1,6 +1,7 @@
 package com.bryanguerra.dynamicislandmusic.ui.settings
 
 import android.Manifest
+import android.content.Intent
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -12,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.bryanguerra.dynamicislandmusic.util.BlurSupport
 import com.bryanguerra.dynamicislandmusic.util.PermissionsHelper
 import com.bryanguerra.dynamicislandmusic.viewmodel.SettingsUiState
 import com.bryanguerra.dynamicislandmusic.viewmodel.SettingsViewModel
@@ -25,6 +27,11 @@ fun SettingsScreen(vm: SettingsViewModel = viewModel()) {
     val notifLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { vm.refreshPermissions() }
+
+    val showBlurWarning = remember {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                !BlurSupport.isSystemBlurEnabled(ctx)
+    }
 
     // Re-evaluar permisos al volver a la app (ej. tras abrir Ajustes)
     LaunchedEffect(Unit) {
@@ -43,6 +50,24 @@ fun SettingsScreen(vm: SettingsViewModel = viewModel()) {
     ) {
 
         Text("Dynamic Island (música)", style = MaterialTheme.typography.titleLarge)
+
+        // TODO ARREGLAR ESTE WARNING DE BLUR. AÑADIRLO AL HELPER Y DEMAS PARA QUE SE ACTUALICE SI SE QUITA/PONE EL AJUSTE
+        if (showBlurWarning) {
+            Card {
+                Column(Modifier.padding(16.dp)) {
+                    Text("Para ver el fondo desenfocado, activa \"Permitir difuminar ventanas\" en Opciones de desarrollador.")
+                    Spacer(Modifier.height(8.dp))
+                    Button(onClick = {
+                        ctx.startActivity(
+                            Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        )
+                    }) {
+                        Text("Abrir opciones de desarrollador")
+                    }
+                }
+            }
+        }
 
         // --- Switch Activar/Desactivar ---
         Card {

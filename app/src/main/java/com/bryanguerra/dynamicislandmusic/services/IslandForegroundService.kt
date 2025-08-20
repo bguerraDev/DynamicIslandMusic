@@ -3,28 +3,28 @@ package com.bryanguerra.dynamicislandmusic.services
 import android.app.*
 import android.content.*
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.bryanguerra.dynamicislandmusic.R
 import com.bryanguerra.dynamicislandmusic.util.Constants
 import com.bryanguerra.dynamicislandmusic.data.media.MediaSessionBus
 import com.bryanguerra.dynamicislandmusic.data.visibility.UsageStatsRepository
-import com.bryanguerra.dynamicislandmusic.overlay.OverlayWindowManager
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
 import com.bryanguerra.dynamicislandmusic.data.settings.SettingsRepository
-import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.first
-import javax.inject.Inject
+import com.bryanguerra.dynamicislandmusic.overlay.IslandState
+import com.bryanguerra.dynamicislandmusic.overlay.IslandStateMachine
 import com.bryanguerra.dynamicislandmusic.util.PermissionsHelper
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+private const val POLL_MS = 700L // sube a 700–1000ms para menos spam/CPU
 @AndroidEntryPoint
 class IslandForegroundService : Service() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     @Inject
-    lateinit var overlay: OverlayWindowManager
+    lateinit var stateMachine: IslandStateMachine
 
     @Inject
     lateinit var usageRepo: UsageStatsRepository
@@ -37,46 +37,124 @@ class IslandForegroundService : Service() {
 
     @Inject
     lateinit var notificationManager: NotificationManager
-    private var inactivityJob: Job? = null
     private var pollJob: Job? = null
-    private var islandEnabled: Boolean = true
+    private var stateJob: Job? = null
 
+    private var islandEnabled = true
+    private var lastPlayback: Int? = null
+    private var lastReportedInFg: Boolean? = null
 
-    // --- Receiver para eventos de bloqueo/desbloqueo ---
-    private val screenReceiver = object : BroadcastReceiver() {
-        override fun onReceive(ctx: Context?, intent: Intent?) {
-            when (intent?.action) {
-                // Usuario acaba de desbloquear: si se puede, muestra al instante
-                Intent.ACTION_USER_PRESENT -> if (shouldShowOverlayNow()) showIslandIfNeeded()
-                // Pantalla apagada: oculta por si acaso
-                Intent.ACTION_SCREEN_OFF -> overlay.hide()
-            }
-        }
-    }
 
     override fun onCreate() {
         super.onCreate()
+        ensureChannel()
 
-        // DataStore: leer y observar el switch
-        // Lectura inmediata (bloqueo muy breve) para respetar el valor desde el arranque:
-        runBlocking { islandEnabled = settingsRepo.islandEnabledFlow.first() } // lectura inmediata
-        // Mantenerlo actualizado en caliente:
+        // Arrancar FGS
+        startForeground(Constants.NOTIF_ID, buildNotification())
+
+        // 1) Observa settings (enabled)
+        /*scope.launch {
+            settingsRepo.islandEnabledFlow.collect { enabled ->
+                Log.d("IslandForegroundService", "settings islandEnabled=$enabled")
+                islandEnabled = enabled
+                stateMachine.updateEnvironment(enabled = enabled)
+            }
+        }*/
+
         scope.launch {
             settingsRepo.islandEnabledFlow.collect { enabled ->
-                islandEnabled = enabled
-                if (!enabled) overlay.hide() // oculta al desactivar
+                stateMachine.updateEnvironment(enabled = enabled)
+                Log.d("IslandForegroundService", "settings islandEnabled=$enabled")
+                if (enabled) {
+                    // “nudge” inmediato por si no llega ningún evento de playback ahora mismo
+                    stateMachine.onPlaybackChanged(MediaSessionBus.playbackState.value)
+                }
             }
         }
 
-        ensureChannel()
-        startForeground(Constants.NOTIF_ID, buildNotification())
-        // Registrar receiver dinámico
+        // 2) Observa playback del bus y pásalo al stateMachine
+        scope.launch {
+            MediaSessionBus.playbackState.collect { state ->
+                lastPlayback = state
+                Log.d("IslandForegroundService", "playback=$state")
+                stateMachine.onPlaybackChanged(state)
+            }
+        }
+
+        // 3) Pantalla / lock
         registerReceiver(screenReceiver, IntentFilter().apply {
             addAction(Intent.ACTION_USER_PRESENT)
             addAction(Intent.ACTION_SCREEN_OFF)
         })
-        observeMedia()
-        startConditionPoll()
+
+        // 4) Sondeo de foreground
+        startForegroundPoll()
+
+        // 5) Observa el estado y administra FGS/Notification
+        // ✅ NO se para si hay playback aunque esté Hidden
+        stateJob = scope.launch {
+            stateMachine.state.collect { st ->
+                val hasActivePlayback =
+                    lastPlayback == android.media.session.PlaybackState.STATE_PLAYING ||
+                            lastPlayback == android.media.session.PlaybackState.STATE_BUFFERING ||
+                            lastPlayback == android.media.session.PlaybackState.STATE_PAUSED
+                Log.d(
+                    "IslandForegroundService",
+                    "state=$st hasActivePlayback=$hasActivePlayback enabled=$islandEnabled"
+                )
+                when (st) {
+                    IslandState.Pill, IslandState.Expanded -> {
+                        // mantener FGS y refrescar notif
+                        notificationManager.notify(Constants.NOTIF_ID, buildNotification())
+                    }
+
+                    IslandState.Hidden -> {
+                        if (islandEnabled && hasActivePlayback) {
+                            // seguimos vivos para vigilar cambios (salir de RiMusic / desbloquear)
+                            notificationManager.notify(Constants.NOTIF_ID, buildNotification())
+                        } else {
+                            Log.d("IslandForegroundService", "stopping FGS")
+                            stopForeground(STOP_FOREGROUND_REMOVE)
+                            stopSelf()
+                        }
+                    }
+                }
+            }
+        }
+
+
+    }
+
+    // --- Receiver para eventos de bloqueo/desbloqueo ---
+    private val screenReceiver = object : BroadcastReceiver() {
+        override fun onReceive(ctx: Context?, intent: Intent?) {
+            Log.d("IslandForegroundService", "screen intent=${intent?.action}")
+            when (intent?.action) {
+                // Usuario acaba de desbloquear: si se puede, muestra al instante
+                Intent.ACTION_USER_PRESENT -> stateMachine.updateEnvironment(unlocked = true)
+                // Pantalla apagada: oculta por si acaso
+                Intent.ACTION_SCREEN_OFF -> stateMachine.updateEnvironment(unlocked = false)
+            }
+        }
+    }
+
+    private fun startForegroundPoll() {
+        pollJob?.cancel()
+        pollJob = scope.launch {
+            while (isActive) {
+                val hasUsage = PermissionsHelper.hasUsageAccess(this@IslandForegroundService)
+                val inFg = if (hasUsage) {
+                    usageRepo.isAppInForeground(Constants.TARGET_PLAYER_PKG)
+                } else false
+
+                if (inFg != lastReportedInFg) {
+                    Log.i("IslandForegroundService", "poll change: targetInForeground=$inFg")
+                    lastReportedInFg = inFg
+                    stateMachine.updateEnvironment(targetInForeground = inFg)
+                }
+                delay(POLL_MS) // TODO comprobar tiempo si es correcto. Antes 800ms
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -84,78 +162,14 @@ class IslandForegroundService : Service() {
     }
 
     override fun onDestroy() {
-        scope.cancel()
         pollJob?.cancel()
+        stateJob?.cancel()
         runCatching { unregisterReceiver(screenReceiver) }
-        overlay.hide()
+        scope.cancel()
         super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
-
-    // ---- Observación de estado de media ----
-    private fun observeMedia() {
-        scope.launch {
-            // Reaccionar a cambios de paquete activo + estado
-            combine(
-                MediaSessionBus.activePackage,
-                MediaSessionBus.playbackState
-            ) { pkg, state -> Pair(pkg, state) }
-                .collectLatest { (pkg, state) ->
-                    val isTarget = pkg == Constants.TARGET_PLAYER_PKG
-                    val isPlaying = state == android.media.session.PlaybackState.STATE_PLAYING ||
-                            state == android.media.session.PlaybackState.STATE_BUFFERING
-                    val isPaused = state == android.media.session.PlaybackState.STATE_PAUSED
-
-                    if (!isTarget) {
-                        overlay.hide()
-                        return@collectLatest
-                    }
-                    val canShow = shouldShowOverlayNow()
-
-                    when {
-                        isPlaying -> {
-                            // Reproduciendo: no dormir
-                            inactivityJob?.cancel()
-                            if (canShow) showIslandIfNeeded() else overlay.hide()
-                        }
-
-                        isPaused -> {
-                            // Pausado: mantener visible + dormir por timeout
-                            if (canShow) showIslandIfNeeded() else overlay.hide()
-                            restartPausedTimer()
-                        }
-
-                        else -> {
-                            // Stopped/None/Null: dormir
-                            scheduleSleep()
-                        }
-                    }
-                }
-        }
-    }
-
-    private fun showIslandIfNeeded() {
-
-        if (!PermissionsHelper.hasOverlayPermission(this)) {
-            // si revocan el permiso mientras corre, ocultar
-            overlay.hide()
-            return
-        }
-        if (!overlay.isShowing()) overlay.showIsland()
-        notificationManager.notify(Constants.NOTIF_ID, buildNotification())
-    }
-
-    private fun scheduleSleep() {
-        if (inactivityJob?.isActive == true) return
-        inactivityJob = scope.launch {
-            delay(Constants.INACTIVITY_TIMEOUT_MS)
-            overlay.hide()
-            // apaga el FGS si no hay overlay visible
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            stopSelf()
-        }
-    }
 
     // ---- Notificación FGS ----
     private fun ensureChannel() {
@@ -165,62 +179,6 @@ class IslandForegroundService : Service() {
             NotificationManager.IMPORTANCE_MIN
         )
         notificationManager.createNotificationChannel(ch)
-    }
-
-    private fun startConditionPoll() {
-        pollJob?.cancel()
-        pollJob = scope.launch {
-            while (isActive) {
-                val state = MediaSessionBus.playbackState.value
-                val shouldShow = shouldShowOverlayNow()
-
-                if (shouldShow) {
-                    showIslandIfNeeded()
-                } else {
-                    // Oculta solo si está STOPPED/NONE o no cumple reglas (bloqueado o app en foreground)
-                    val stoppedOrNone = state == android.media.session.PlaybackState.STATE_STOPPED ||
-                            state == android.media.session.PlaybackState.STATE_NONE ||
-                            state == null
-                    val unlocked = !keyguard.isKeyguardLocked
-                    val riMusicInFg = usageRepo.isAppInForeground(Constants.TARGET_PLAYER_PKG)
-                    val violates = !islandEnabled || !unlocked || riMusicInFg
-
-                    if (stoppedOrNone || violates) overlay.hide()
-                    // Si es PAUSED, caerá en shouldShow=true y no entrará aquí
-                }
-                delay(1000)
-            }
-        }
-    }
-
-    private fun shouldShowOverlayNow(): Boolean {
-        // reglas: playing + unlocked + RiMusic NO en foreground
-        val state = MediaSessionBus.playbackState.value
-        val playing = state == android.media.session.PlaybackState.STATE_PLAYING ||
-                state == android.media.session.PlaybackState.STATE_BUFFERING
-        val paused = state == android.media.session.PlaybackState.STATE_PAUSED
-
-
-        val unlocked = !keyguard.isKeyguardLocked
-        val riMusicInFg = usageRepo.isAppInForeground(Constants.TARGET_PLAYER_PKG)
-
-        // Mostrar si: switch ON, (playing || paused), desbloqueado y RiMusic NO en foreground
-        return islandEnabled && (playing || paused) && unlocked && !riMusicInFg
-    }
-
-    /**
-     * Helpers de timers
-     */
-
-    private fun restartPausedTimer() {
-        inactivityJob?.cancel()
-        inactivityJob = scope.launch {
-            delay(Constants.INACTIVITY_TIMEOUT_MS)
-            overlay.hide()
-            // apaga el FGS si no hay overlay visible
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            stopSelf()
-        }
     }
 
     private fun buildNotification(): Notification =

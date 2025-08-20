@@ -44,6 +44,14 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".IslandExpandedActivity"
+            android:exported="false"
+            android:theme="@style/Theme.IslandTranslucentBlur"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:finishOnTaskLaunch="true" />
 
         <!-- Notification Listener para sesiones/controles de música -->
         <service
