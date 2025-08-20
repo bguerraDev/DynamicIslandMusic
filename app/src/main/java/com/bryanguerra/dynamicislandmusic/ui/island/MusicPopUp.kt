@@ -95,7 +95,7 @@ fun MusicPopUp(onSwipeUpClose: () -> Unit) {
     val shape = RoundedCornerShape(28.dp)
     val view = LocalView.current
 
-    // Container SIN statusBarsPadding (ya lo pone el padre)
+    // Container SIN statusBarsPadding, lo maneja el padre (ExpandedBackdrop)
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -134,8 +134,10 @@ fun MusicPopUp(onSwipeUpClose: () -> Unit) {
                 .clip(shape)
                 .background(
                     Brush.verticalGradient(
-                        0f to dom.bg.copy(alpha = 0.75f),
-                        1f to dom.bg.copy(alpha = 0.60f)
+                        /*0f to dom.bg.copy(alpha = 0.75f),
+                        1f to dom.bg.copy(alpha = 0.60f)*/
+                        0f to dom.bg.copy(alpha = 0.42f),
+                        1f to dom.bg.copy(alpha = 0.28f)
                     )
                 )
         )

@@ -34,6 +34,7 @@ object PermissionsHelper {
 
     /** Usage Access (saber si RiMusic está en foreground) */
     fun hasUsageAccess(ctx: Context): Boolean {
+        @Suppress("DEPRECATION")
         val appOps = ctx.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
         val mode =
             appOps.unsafeCheckOpNoThrow(
