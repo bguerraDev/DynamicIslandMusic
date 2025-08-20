@@ -19,6 +19,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
+ * SKELETON CLASS FILE FOR FROSTEDGLASS EFFECT. NOT USED IN THE PROJECT.
+ */
+
+/**
  * Capa oscurecida para mostrar detrás del popup (simula “enfoque” en el popup).
  */
 @Composable
@@ -57,6 +61,7 @@ fun FrostedGlassBox(
     }
 }
 
+/*
 @RequiresApi(Build.VERSION_CODES.S)
 @Composable
 fun BackdropSimulatedGlass(
@@ -96,3 +101,4 @@ fun BackdropSimulatedGlass(
         // (Opcional) capa de “ruido” ultra sutil para textura glass
     }
 }
+*/

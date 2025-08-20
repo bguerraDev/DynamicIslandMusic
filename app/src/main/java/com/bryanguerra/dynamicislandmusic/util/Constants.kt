@@ -2,7 +2,7 @@ package com.bryanguerra.dynamicislandmusic.util
 
 object Constants {
     const val TARGET_PLAYER_PKG = "it.fast4x.rimusic"
-    const val INACTIVITY_TIMEOUT_MS = 45_000L   // 45 s tras PAUSE/STOP
+    const val INACTIVITY_TIMEOUT_MS = 25_000L   // TODO MODIFICABLE. 45s tras PAUSE/STOP
     const val NOTIF_CHANNEL_ID = "island_overlay"
     const val NOTIF_CHANNEL_NAME = "Dynamic Island"
     const val NOTIF_ID = 1001
