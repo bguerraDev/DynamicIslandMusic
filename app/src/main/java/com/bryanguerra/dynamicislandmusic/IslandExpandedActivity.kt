@@ -24,6 +24,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.bryanguerra.dynamicislandmusic.ui.island.MusicPopUp
 import com.bryanguerra.dynamicislandmusic.domain.overlay.ShowIslandUseCase
+import com.bryanguerra.dynamicislandmusic.util.BlurSupport
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -64,16 +65,15 @@ class IslandExpandedActivity : ComponentActivity() {
             ExpandedBackdrop({ finish() })
         }
         // 2) Aplicar el blur (API 31+), después de tener el decor
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && BlurSupport.isCrossWindowBlurEnabled(this)) {
             window.decorView.post {
                 runCatching {
-                    window.setBackgroundBlurRadius(60)
+                    window.setBackgroundBlurRadius(18)
                     // Si quieres un toque de oscurecido, muy bajo:
-                    @Suppress("DEPRECATION")
-                    window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
-                    // Algunos OEM responden mejor también a:
-                    window.attributes =
-                        window.attributes.apply { dimAmount = 0f; blurBehindRadius = 60 }
+                    //@Suppress("DEPRECATION")
+                    //window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+                    // TODO PROBAR. Algunos OEM responden mejor también a:
+                    //window.attributes = window.attributes.apply { dimAmount = 0f; blurBehindRadius = 60 }
                 }.onFailure {
                     Log.w("IslandExpandedActivity", "Window blur not applied", it)
                 }
