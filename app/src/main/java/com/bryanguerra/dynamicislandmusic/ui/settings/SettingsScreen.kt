@@ -1,11 +1,13 @@
 package com.bryanguerra.dynamicislandmusic.ui.settings
 
 import android.Manifest
-import android.content.Intent
-import android.os.Build
+import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +20,7 @@ import com.bryanguerra.dynamicislandmusic.util.PermissionsHelper
 import com.bryanguerra.dynamicislandmusic.viewmodel.SettingsUiState
 import com.bryanguerra.dynamicislandmusic.viewmodel.SettingsViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(vm: SettingsViewModel = viewModel()) {
 
@@ -28,11 +31,6 @@ fun SettingsScreen(vm: SettingsViewModel = viewModel()) {
         ActivityResultContracts.RequestPermission()
     ) { vm.refreshPermissions() }
 
-    val showBlurWarning = remember {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                !BlurSupport.isSystemBlurEnabled(ctx)
-    }
-
     // Re-evaluar permisos al volver a la app (ej. tras abrir Ajustes)
     LaunchedEffect(Unit) {
         // pequeño "poll" porque los Settings son externos
@@ -42,28 +40,69 @@ fun SettingsScreen(vm: SettingsViewModel = viewModel()) {
         }
     }
 
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        // Hace que el contenido respete satatus+nav (safe areas)
+        contentWindowInsets = WindowInsets.safeDrawing,
+        topBar = {
+
+            // Los TopAppBar de Material3 ya mapean status bars
+            CenterAlignedTopAppBar(
+                title = { Text("Ajustes") },
+                windowInsets = WindowInsets.statusBars
+            )
+        }
+    ) { inner ->
+        SettingsContent(
+            modifier = Modifier
+                .padding(inner)
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 12.dp), // margen en bordes
+            vm = vm,
+            ui = ui,
+            notifLauncher = notifLauncher,
+            ctx = ctx
+        )
+    }
+}
+
+@Composable
+private fun SettingsContent(
+    modifier: Modifier,
+    vm: SettingsViewModel,
+    ui: SettingsUiState,
+    notifLauncher: ActivityResultLauncher<String>,
+    ctx: Context
+) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+        modifier = modifier
+            .verticalScroll(rememberScrollState())
+            .fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-
-        Text("Dynamic Island (música)", style = MaterialTheme.typography.titleLarge)
-
-        // TODO ARREGLAR ESTE WARNING DE BLUR. AÑADIRLO AL HELPER Y DEMAS PARA QUE SE ACTUALICE SI SE QUITA/PONE EL AJUSTE
-        if (showBlurWarning) {
-            Card {
+        if (ui.showBlurWarning) {
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+            ) {
                 Column(Modifier.padding(16.dp)) {
-                    Text("Para ver el fondo desenfocado, activa \"Permitir difuminar ventanas\" en Opciones de desarrollador.")
+                    Text(
+                        "Difuminado desactivado",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "Para ver el blur del fondo, activa «Permitir difuminar ventanas» " +
+                                "en Opciones de desarrollador (o desactiva «Desactivar efectos de desenfoque»).",
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
                     Spacer(Modifier.height(8.dp))
-                    Button(onClick = {
-                        ctx.startActivity(
-                            Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
-                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        )
-                    }) {
-                        Text("Abrir opciones de desarrollador")
+                    Row {
+                        TextButton(onClick = {
+                            val intent = BlurSupport.developerOptionsIntent()
+                            runCatching { ctx.startActivity(intent) }
+                        }) { Text("Abrir desarrollador") }
                     }
                 }
             }
@@ -153,6 +192,7 @@ fun SettingsScreen(vm: SettingsViewModel = viewModel()) {
         PermissionsSummary(ui)
     }
 }
+
 
 @Composable
 private fun PermissionCard(

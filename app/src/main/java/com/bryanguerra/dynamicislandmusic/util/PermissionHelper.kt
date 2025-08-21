@@ -11,6 +11,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.PermissionChecker
 import androidx.core.net.toUri
+import com.bryanguerra.dynamicislandmusic.ui.settings.SettingsScreen
 
 object PermissionsHelper {
 
