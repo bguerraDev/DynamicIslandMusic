@@ -90,7 +90,7 @@ class OverlayWindowManager(
                         islandNavigator.openExpanded()
                     },
                     onLongPress = {
-                        hide()
+                        //hide()
                         // TODO abrir app de destino (RiMusic)
                         //openTargetApp(Constants.TARGET_PLAYER_PKG)
                     }
