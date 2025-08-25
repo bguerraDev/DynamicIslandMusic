@@ -13,6 +13,7 @@ import kotlinx.coroutines.*
 import com.bryanguerra.dynamicislandmusic.data.settings.SettingsRepository
 import com.bryanguerra.dynamicislandmusic.overlay.IslandState
 import com.bryanguerra.dynamicislandmusic.overlay.IslandStateMachine
+import com.bryanguerra.dynamicislandmusic.overlay.OverlayWindowManager
 import com.bryanguerra.dynamicislandmusic.util.PermissionsHelper
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -37,6 +38,9 @@ class IslandForegroundService : Service() {
 
     @Inject
     lateinit var notificationManager: NotificationManager
+
+    @Inject lateinit var overlayWindowManager: OverlayWindowManager
+
     private var pollJob: Job? = null
     private var stateJob: Job? = null
 

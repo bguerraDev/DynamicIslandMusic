@@ -12,13 +12,21 @@ import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import android.graphics.Rect
 import android.view.View
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.bryanguerra.dynamicislandmusic.data.settings.SettingsRepository
+import com.bryanguerra.dynamicislandmusic.domain.settings.WaveStyle
 import com.bryanguerra.dynamicislandmusic.presentation.navigation.IslandNavigator
 import com.bryanguerra.dynamicislandmusic.ui.island.IslandOverlay
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.android.scopes.ServiceScoped
+import javax.inject.Inject
 
-class OverlayWindowManager(
-    private val context: Context,
-    private val islandNavigator: IslandNavigator
-
+@ServiceScoped
+class OverlayWindowManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val islandNavigator: IslandNavigator,
+    private val settingsRepo: SettingsRepository
 ) {
     private val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private var root: ComposeView? = null
@@ -83,6 +91,7 @@ class OverlayWindowManager(
             // setContent después de settear los owners
             // Importante: el composable puede pedir expandir/colapsar para que actualicemos la ventana
             compose.setContent {
+                val wave by settingsRepo.waveStyleFlow.collectAsState(initial = WaveStyle.Classic)
                 IslandOverlay(
                     onShortTap = {
                         // ocultar pill mientras está expandido
@@ -93,7 +102,8 @@ class OverlayWindowManager(
                         //hide()
                         // TODO abrir app de destino (RiMusic)
                         //openTargetApp(Constants.TARGET_PLAYER_PKG)
-                    }
+                    },
+                    selectedWave = wave
                 )
             }
             root = compose

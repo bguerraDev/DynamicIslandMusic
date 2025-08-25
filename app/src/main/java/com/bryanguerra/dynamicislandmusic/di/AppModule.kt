@@ -23,6 +23,7 @@ import com.bryanguerra.dynamicislandmusic.presentation.navigation.IslandNavigato
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
+    // TODO COMPROBAR QUE APPMODULE ES CORRECTO
     @Provides
     @Singleton
     fun provideSettingsRepository(@ApplicationContext ctx: Context) = SettingsRepository(ctx)
@@ -47,7 +48,7 @@ object AppModule {
     fun provideOverlayWindowManager(
         @ApplicationContext ctx: Context,
         islandNavigator: IslandNavigator
-    ): OverlayWindowManager = OverlayWindowManager(ctx, islandNavigator)
+    ): OverlayWindowManager = OverlayWindowManager(ctx, islandNavigator, SettingsRepository(ctx))
 
     @Provides
     @Singleton

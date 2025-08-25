@@ -41,10 +41,13 @@ import com.bryanguerra.dynamicislandmusic.ui.components.SoundWaveLottie
 import kotlinx.coroutines.delay
 import android.view.HapticFeedbackConstants
 import androidx.compose.ui.input.pointer.pointerInput
+import com.bryanguerra.dynamicislandmusic.domain.settings.WaveStyle
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MusicPopUp(onSwipeUpClose: () -> Unit) {
+fun MusicPopUp(
+    onSwipeUpClose: () -> Unit,
+    selectedWave: WaveStyle) {
     // --- Estado de media ---
     val playbackStateInt by MediaSessionBus.playbackState.collectAsState(initial = null)
     val playback by MediaSessionBus.playback.collectAsState(initial = null)
@@ -191,7 +194,8 @@ fun MusicPopUp(onSwipeUpClose: () -> Unit) {
                 SoundWaveLottie(
                     isPlaying = isPlaying,
                     color = dom.accent,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(54.dp), // antes 26.dp
+                    resId = selectedWave.rawRes
                 )
             }
 

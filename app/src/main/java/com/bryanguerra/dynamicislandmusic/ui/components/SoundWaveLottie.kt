@@ -20,9 +20,10 @@ fun SoundWaveLottie(
     isPlaying: Boolean,
     color: Color,
     modifier: Modifier = Modifier,
-    isPaused: Boolean = false
+    isPaused: Boolean = false,
+    @androidx.annotation.RawRes resId: Int = R.raw.soundwave // valor por defecto
 ) {
-    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.soundwave))
+    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(resId))
 
     // Si está en pausa, detenemos la animación (speed = 0)
     val progress by animateLottieCompositionAsState(
