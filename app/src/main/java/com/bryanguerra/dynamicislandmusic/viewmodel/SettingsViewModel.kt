@@ -4,10 +4,13 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.bryanguerra.dynamicislandmusic.data.settings.SettingsRepository
+import com.bryanguerra.dynamicislandmusic.domain.settings.WaveStyle
 import com.bryanguerra.dynamicislandmusic.util.BlurSupport
 import com.bryanguerra.dynamicislandmusic.util.PermissionsHelper
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class SettingsUiState(
     val islandEnabled: Boolean = true,
@@ -17,23 +20,29 @@ data class SettingsUiState(
     val postNotificationsGranted: Boolean = true,
     val blurSupported: Boolean = false,
     val systemBlurEnabled: Boolean = false,
-    val showBlurWarning: Boolean = false
+    val showBlurWarning: Boolean = false,
+    val waveStyle: WaveStyle = WaveStyle.Classic
 )
 
-class SettingsViewModel(app: Application) : AndroidViewModel(app) {
-
-    private val repo = SettingsRepository(app)
+@HiltViewModel
+class SettingsViewModel @Inject constructor(
+    app: Application,
+    private val repo: SettingsRepository
+) : AndroidViewModel(app) {
 
     private val _ui = MutableStateFlow(SettingsUiState())
-    val ui: StateFlow<SettingsUiState> = _ui.asStateFlow()
+    val ui: StateFlow<SettingsUiState> = _ui
 
     init {
         // Observa el switch
-        viewModelScope.launch {
-            repo.islandEnabledFlow.collect { enabled ->
-                _ui.update { it.copy(islandEnabled = enabled) }
+        combine(
+            repo.islandEnabledFlow,
+            repo.waveStyleFlow
+        ) { enabled, wave -> enabled to wave }
+            .onEach { (enabled, wave) ->
+                _ui.update { it.copy(islandEnabled = enabled, waveStyle = wave) }
             }
-        }
+            .launchIn(viewModelScope)
         // Primera evaluación de permisos
         refreshPermissions()
     }
@@ -57,5 +66,9 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setIslandEnabled(value: Boolean) {
         viewModelScope.launch { repo.setIslandEnabled(value) }
+    }
+
+    fun setWaveStyle(style: WaveStyle) {
+        viewModelScope.launch { repo.setWaveStyle(style) }
     }
 }

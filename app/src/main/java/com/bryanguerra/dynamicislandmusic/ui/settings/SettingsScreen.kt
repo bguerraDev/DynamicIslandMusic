@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.bryanguerra.dynamicislandmusic.domain.settings.WaveStyle
 import com.bryanguerra.dynamicislandmusic.util.BlurSupport
 import com.bryanguerra.dynamicislandmusic.util.PermissionsHelper
 import com.bryanguerra.dynamicislandmusic.viewmodel.SettingsUiState
@@ -116,6 +117,7 @@ private fun SettingsContent(
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Switch activar/desactivar isla
                 Column(Modifier.weight(1f)) {
                     Text("Activar isla", style = MaterialTheme.typography.titleMedium)
                     Text(
@@ -154,6 +156,11 @@ private fun SettingsContent(
 
             }
         }
+        // ExposedDropdownMenuBox
+        WaveStyleSelector(
+            current = ui.waveStyle,
+            onSelect = { vm.setWaveStyle(it) }
+        )
 
         // --- Permisos ---
         PermissionCard(
@@ -193,7 +200,73 @@ private fun SettingsContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WaveStyleSelector(
+    current: WaveStyle,
+    onSelect: (WaveStyle) -> Unit
+) {
+    val options = WaveStyle.entries
+    var expanded by remember { mutableStateOf(false) }
 
+    // Caja
+    Card {
+        Column(Modifier.fillMaxWidth().padding(16.dp)) {
+            Text("Animación de ondas", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "Elige el estilo de ondas que se mostrará en la pill y en la vista expandida",
+                style = MaterialTheme.typography.bodySmall
+            )
+            Spacer(Modifier.height(12.dp))
+
+            ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
+                OutlinedTextField(
+                    value = current.label,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Estilo") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    options.forEach { style ->
+                        DropdownMenuItem(
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    // Mini preview Lottie (frame 0)
+                                    MiniLottiePreview(rawRes = style.rawRes)
+                                    Spacer(Modifier.width(12.dp))
+                                    Text(style.label)
+                                }
+                            },
+                            onClick = {
+                                onSelect(style)
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MiniLottiePreview(@androidx.annotation.RawRes rawRes: Int) {
+    // Mostramos el primer frame como icono
+    val comp by com.airbnb.lottie.compose.rememberLottieComposition(
+        com.airbnb.lottie.compose.LottieCompositionSpec.RawRes(rawRes)
+    )
+    com.airbnb.lottie.compose.LottieAnimation(
+        composition = comp,
+        progress = { 0f },
+        modifier = Modifier.size(28.dp)
+    )
+}
 @Composable
 private fun PermissionCard(
     title: String,

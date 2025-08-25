@@ -53,6 +53,7 @@ android {
     tasks.withType<KotlinJvmCompile>().configureEach {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
+            freeCompilerArgs.add("-XXLanguage:+PropertyParamAnnotationDefaultTargetMode")
             freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
         }
     }

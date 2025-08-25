@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.bryanguerra.dynamicislandmusic.R
 import com.bryanguerra.dynamicislandmusic.data.media.MediaSessionBus
+import com.bryanguerra.dynamicislandmusic.domain.settings.WaveStyle
 import com.bryanguerra.dynamicislandmusic.overlay.ColorExtractor
 import com.bryanguerra.dynamicislandmusic.overlay.DominantColors
 import com.bryanguerra.dynamicislandmusic.ui.components.SoundWaveLottie
@@ -37,7 +38,8 @@ fun IslandOverlay(
     onLongPress: () -> Unit,
     cutoutWidthDp: Int = 60,   // hueco para no tapar la cámara
     leftMarginDp: Int = 2,
-    rightMarginDp: Int = 2
+    rightMarginDp: Int = 2,
+    selectedWave: WaveStyle
 ) {
     val view = LocalView.current
     val albumArt by MediaSessionBus.albumArt.collectAsState(initial = null)
@@ -120,7 +122,8 @@ fun IslandOverlay(
             color = dom.accent,
             modifier = Modifier
                 .size(36.dp)
-                .alpha(wavesAlpha)
+                .alpha(wavesAlpha),
+            resId = selectedWave.rawRes
         )
 
         Spacer(Modifier.width(rightMarginDp.dp))
