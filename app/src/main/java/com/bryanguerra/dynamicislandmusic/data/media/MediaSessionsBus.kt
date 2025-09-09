@@ -42,7 +42,7 @@ object MediaSessionBus {
         val current = _playback.value
         if (current != null && current.state != state) {
             _playback.value = PlaybackState.Builder(current).setState(
-                state ?: PlaybackState.STATE_PAUSED,
+                state ?: PlaybackState.STATE_NONE,
                 current.position,
                 current.playbackSpeed
             ).build()
