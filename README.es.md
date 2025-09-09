@@ -43,11 +43,6 @@ Ver diagrama en inglés (`README.md`).
 
 ---
 
-## 📸 Capturas
-(Aquí añadiré las imágenes de la app en funcionamiento)
-
----
-
 ## 📜 Licencia
 Este proyecto es de **propiedad intelectual de Bryan Guerra (@bguerraDev)**.  
 Puedes clonar y modificar libremente, pero **siempre debes incluir atribución** al autor en README o pantallas de la app.
