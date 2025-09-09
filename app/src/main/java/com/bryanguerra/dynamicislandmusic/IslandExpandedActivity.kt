@@ -77,7 +77,7 @@ class IslandExpandedActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && BlurSupport.isCrossWindowBlurEnabled(this)) {
             window.decorView.post {
                 runCatching {
-                    window.setBackgroundBlurRadius(18)
+                    window.setBackgroundBlurRadius(14)
                     // Si quieres un toque de oscurecido, muy bajo:
                     //@Suppress("DEPRECATION")
                     //window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)

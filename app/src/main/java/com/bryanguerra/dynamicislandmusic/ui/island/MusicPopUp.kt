@@ -162,7 +162,7 @@ fun MusicPopUp(
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(52.dp)
                         .clip(RoundedCornerShape(10.dp))
                 )
 
