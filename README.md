@@ -8,7 +8,7 @@
 
 [![License](https://img.shields.io/badge/License-Custom_Permissive-blue.svg)]()
 
-[Read this in Spanish](README_ES.md)
+[Read this in Spanish](README.es.md)
 
 An experimental **Dynamic Island-style overlay for Android**, inspired by iOS.  
 The app displays a floating island with real-time playback state, soundwaves, and expand/collapse interactions while maintaining strict control over visibility rules and service lifecycles.
